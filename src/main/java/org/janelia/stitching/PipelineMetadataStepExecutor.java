@@ -263,34 +263,31 @@ public class PipelineMetadataStepExecutor extends PipelineStepExecutor
 			final FilenameFilter fileNameChannelFilter = (dir, name) -> name.matches( fileNameChannelPattern );
 
 			final String[] fileList = imagesBaseDir.list( fileNameChannelFilter );
-			for ( final String fileName : fileList )
-			{
-				final String coordinates;
-				try
-				{
-					coordinates = Utils.getTileCoordinatesString( fileName );
-				}
-				catch ( final Exception e )
-				{
-					continue;
-				}
+			if (fileList != null) {
+				for (final String fileName : fileList) {
+					final String coordinates;
+					try {
+						coordinates = Utils.getTileCoordinatesString(fileName);
+					} catch (final Exception e) {
+						continue;
+					}
 
-				if ( !channelCoordinatesToTiles.get( channel ).containsKey( coordinates ) && coordinatesToPosition.containsKey( coordinates ) )
-				{
-					final TileInfo newTile = new TileInfo();
-					newTile.setPosition( coordinatesToPosition.get( coordinates ).clone() );
-					newTile.setFilePath( imagesBaseDir.getAbsolutePath() + "/" + fileName );
-					newTile.setPixelResolution( tileChannels.get( channel ).get( 0 ).getPixelResolution().clone() );
+					if (!channelCoordinatesToTiles.get(channel).containsKey(coordinates) && coordinatesToPosition.containsKey(coordinates)) {
+						final TileInfo newTile = new TileInfo();
+						newTile.setPosition(coordinatesToPosition.get(coordinates).clone());
+						newTile.setFilePath(imagesBaseDir.getAbsolutePath() + "/" + fileName);
+						newTile.setPixelResolution(tileChannels.get(channel).get(0).getPixelResolution().clone());
 
-					channelMaxTileIndex.put( channel, channelMaxTileIndex.getOrDefault( channel, -1 ) + 1 );
-					newTile.setIndex( channelMaxTileIndex.get( channel ).intValue() );
+						channelMaxTileIndex.put(channel, channelMaxTileIndex.getOrDefault(channel, -1) + 1);
+						newTile.setIndex(channelMaxTileIndex.get(channel).intValue());
 
-					final long timestamp = Utils.getTileTimestamp( fileName );
-					if ( !channelTimestampToTiles.get( channel ).containsKey( timestamp ) )
-						channelTimestampToTiles.get( channel ).put( timestamp, new ArrayList<>() );
-					channelTimestampToTiles.get( channel ).get( timestamp ).add( newTile );
+						final long timestamp = Utils.getTileTimestamp(fileName);
+						if (!channelTimestampToTiles.get(channel).containsKey(timestamp))
+							channelTimestampToTiles.get(channel).put(timestamp, new ArrayList<>());
+						channelTimestampToTiles.get(channel).get(timestamp).add(newTile);
 
-					missingTiles.put( channel, missingTiles.getOrDefault( channel, 0 ) + 1 );
+						missingTiles.put(channel, missingTiles.getOrDefault(channel, 0) + 1);
+					}
 				}
 			}
 		}
