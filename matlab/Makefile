@@ -8,7 +8,8 @@ build:
 	  -R '-nojvm' \
 	  -m \
 	  -d bin \
-	  matlab_decon.m
+	  matlab_decon.m \
+	 -I .
 
 .PHONY: clean
 clean:
