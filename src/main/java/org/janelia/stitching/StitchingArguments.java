@@ -119,6 +119,17 @@ public class StitchingArguments implements Serializable {
 		usage = "Apply stitching parameters obtained from raw tiles to deconvolved tiles.")
 	private boolean applyRawStitchingToDecon = false;
 
+	@Option(name = "-o", aliases = { "--outputDir" }, required = false,
+		usage = "The base directory for the stiched output.")
+	private String outputDir = null;
+
+	@Option(name = "--outputContainerName", required = false,
+			usage = "Ouput container name")
+	private String outputContainerName = null;
+
+	@Option(name = "--outputDatasetName", required = false,
+			usage = "Ouput container name")
+	private String outputDatasetName = null;
 
 	private boolean parsedSuccessfully = false;
 
@@ -240,6 +251,12 @@ public class StitchingArguments implements Serializable {
 	public boolean applyRawStitchingToDecon() { return applyRawStitchingToDecon; }
 
 	public RematchingMode rematchingMode() { return rematchingMode; }
+
+	public String outputDir() { return outputDir; }
+
+	public String outputContainerName() { return outputContainerName; }
+
+	public String outputDatasetName() { return outputDatasetName; }
 
 	private long[] parseArray( final String str )
 	{

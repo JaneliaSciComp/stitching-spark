@@ -8,6 +8,7 @@ import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.util.Intervals;
 import net.imglib2.view.RandomAccessiblePairNullable;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.broadcast.Broadcast;
 import org.janelia.dataaccess.DataProvider;
@@ -81,8 +82,6 @@ public class PipelineFusionStepExecutor< T extends NativeType< T > & RealType< T
 		for ( int channel = 0; channel < job.getChannels(); channel++ )
 			TileOperations.translateTilesToOriginReal( job.getTiles( channel ) );
 
-		final String overlapsPathSuffix = job.getArgs().exportOverlaps() ? "-overlaps" : "";
-
 		final DataProvider dataProvider = job.getDataProvider();
 		final DataProviderType dataProviderType = dataProvider.getType();
 
@@ -92,30 +91,11 @@ public class PipelineFusionStepExecutor< T extends NativeType< T > & RealType< T
 				throw new RuntimeException( "The filename of the input configuration indicates that stitching has not been performed. If you intend to export the initial (stage) configuration, supply an additional parameter '--fusestage'." );
 
 		// determine the best location for storing the export files (near the tile configurations by default)
-		String baseExportPath = null;
-		for ( final String inputFilePath : job.getArgs().inputTileConfigurations() )
-		{
-			final String inputFolderPath = PathResolver.getParent( inputFilePath );
-			if ( baseExportPath == null )
-			{
-				baseExportPath = inputFolderPath;
-			}
-			else if ( !baseExportPath.equals( inputFolderPath ) )
-			{
-				// go one level upper since channels are stored in individual subfolders
-				baseExportPath = PathResolver.getParent( inputFolderPath );
-				break;
-			}
-		}
-		baseExportPath = PathResolver.get( baseExportPath, "export.n5" + overlapsPathSuffix );
+		String baseExportPath = job.getSaveFolder() != null ? job.getSaveFolder() : getJobOutputFromInputs();
+		final String n5ExportPath = PathResolver.get( baseExportPath, getExportContainerName(job.getArgs().exportOverlaps()));
 
-		final String n5ExportPath = baseExportPath;
-
-		if ( dataProvider.createN5Reader( n5ExportPath ).exists( "/" ) )
-		{
-			throw new PipelineExecutionException( "Export path already exists: " + n5ExportPath + System.lineSeparator() +
-					"Aborting to prevent possible overwriting of useful data. Please make sure everything is correct, and in case it was intended, delete the existing export first and run it again." );
-		}
+		// we no longer check if the N5 container is there because it might have been created
+		// in a different run and it may be shared for multiple runs
 
 		final N5Writer n5 = dataProvider.createN5Writer( n5ExportPath, N5ExportMetadata.getGsonBuilder() );
 
@@ -128,14 +108,14 @@ public class PipelineFusionStepExecutor< T extends NativeType< T > & RealType< T
 		// loop over channels
 		for ( int ch = 0; ch < job.getChannels(); ch++ )
 		{
-			final int channel = ch;
-			System.out.println( "Processing channel #" + channel );
+			System.out.println( "Processing channel #" + ch);
 
-			final String channelInputPath = job.getArgs().inputTileConfigurations().get( channel );
+			final String channelInputPath = job.getArgs().inputTileConfigurations().get(ch);
 			// get the path to the correction images for the channel and adjust it if necessary (remove '-final' suffix)
-			final String channelCorrectionPath = Utils.removeFilenameSuffix( job.getArgs().correctionImagesPaths().get(channel), "-final");
+			final String channelCorrectionPath = Utils.removeFilenameSuffix( job.getArgs().correctionImagesPaths().get(ch), "-final");
 
-			final String outputChannelGroupPath = N5ExportMetadata.getChannelGroupPath( channel );
+			final String outputChannelGroupPath = getChannelGroupPath(ch);
+
 			n5.createGroup( outputChannelGroupPath );
 
 			// special mode which allows to export only overlaps of tile pairs that have been used for final stitching
@@ -164,9 +144,9 @@ public class PipelineFusionStepExecutor< T extends NativeType< T > & RealType< T
 				} else {
 					// The background value is not available and needs to be estimated.
 					// This is the case for deconvolved data, because in the Flatfield Correction step the background value is estimated only for raw data.
-					backgroundValue = estimateBackgroundValue( job.getTiles( channel ) );
+					backgroundValue = estimateBackgroundValue( job.getTiles(ch) );
 				}
-				System.out.println( "Using background intensity value of " + backgroundValue + " for filling in channel " + channel );
+				System.out.println( "Using background intensity value of " + backgroundValue + " for filling in channel " + ch);
 
 				// save the used background value in group attributes so it can be also used when converting to slice TIFF
 				n5.setAttribute( outputChannelGroupPath, BACKGROUND_VALUE_ATTRIBUTE_KEY, backgroundValue.doubleValue() );
@@ -176,13 +156,13 @@ public class PipelineFusionStepExecutor< T extends NativeType< T > & RealType< T
 				backgroundValue = null;
 			}
 
-			final String fullScaleOutputPath = N5ExportMetadata.getScaleLevelDatasetPath( channel, 0 );
+			final String fullScaleOutputPath = getFullScaleGroupPath(ch);
 
 			// Generate export of the first scale level
 			fuse(
 					n5ExportPath,
 					fullScaleOutputPath,
-					job.getTiles( channel ),
+					job.getTiles(ch),
 					backgroundValue,
 					voxelDimensions
 				);
@@ -212,6 +192,50 @@ public class PipelineFusionStepExecutor< T extends NativeType< T > & RealType< T
 		final N5ExportMetadataWriter exportMetadata = N5ExportMetadata.openForWriting( n5 );
 		exportMetadata.setDefaultScales( scalesDouble );
 		exportMetadata.setDefaultPixelResolution( new FinalVoxelDimensions( "um", voxelDimensions ) );
+	}
+
+	private String getJobOutputFromInputs() {
+		String jobOutput = null;
+		for ( final String inputFilePath : job.getArgs().inputTileConfigurations() )
+		{
+			final String inputFolderPath = PathResolver.getParent( inputFilePath );
+			if ( jobOutput == null )
+			{
+				jobOutput = inputFolderPath;
+			}
+			else if ( !jobOutput.equals( inputFolderPath ) )
+			{
+				// go one level upper since channels are stored in individual subfolders
+				jobOutput = PathResolver.getParent( inputFolderPath );
+				break;
+			}
+		}
+		return jobOutput;
+	}
+
+	private String getExportContainerName(boolean withOverlaps) {
+		String overlapsSuffix =  withOverlaps ? "-overlaps" : "";
+		if (StringUtils.endsWithIgnoreCase(job.getOutputContainerName(), ".n5")) {
+			return job.getOutputContainerName() + overlapsSuffix;
+		} else {
+			return job.getOutputContainerName() + ".n5" + overlapsSuffix;
+		}
+	}
+
+	private String getChannelGroupPath(int channel) {
+		if (job.getDatasetName() == null) {
+			return N5ExportMetadata.getChannelGroupPath(channel);
+		} else {
+			return String.format("%s/%s", job.getDatasetName(), N5ExportMetadata.getChannelGroupPath(channel));
+		}
+	}
+
+	private String getFullScaleGroupPath(int channel) {
+		if (job.getDatasetName() == null) {
+			return N5ExportMetadata.getScaleLevelDatasetPath(channel, 0);
+		} else {
+			return String.format("%s/%s", job.getDatasetName(), N5ExportMetadata.getScaleLevelDatasetPath(channel, 0));
+		}
 	}
 
 	private boolean isTileConfigurationN5( final TileInfo[] tiles )
