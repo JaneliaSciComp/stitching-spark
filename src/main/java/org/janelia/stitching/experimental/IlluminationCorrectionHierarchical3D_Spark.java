@@ -140,22 +140,17 @@ public class IlluminationCorrectionHierarchical3D_Spark implements Serializable
 	}
 
 
-	public <
-		A extends ArrayImg< DoubleType, DoubleArray >,
-		V extends TreeMap< Short, Integer > >
+	public < A extends ArrayImg< DoubleType, DoubleArray >,
+			 V extends TreeMap< Short, Integer > >
 	void run() throws Exception
 	{
 		final DataProvider dataProvider = DataProviderFactory.createFSDataProvider();
 
 		sparkContext = new JavaSparkContext( new SparkConf()
 				.setAppName( "IlluminationCorrection3D" )
-				//.set( "spark.driver.maxResultSize", "8g" )
 				.set( "spark.serializer", "org.apache.spark.serializer.KryoSerializer" )
-				//.set( "spark.kryoserializer.buffer.max", "1g" )
 				.registerKryoClasses( new Class[] { Short.class, Integer.class, Long.class, Double.class, TreeMap.class, TreeMap[].class, double[].class, List.class, Tuple2.class, Interval.class, FinalInterval.class, ArrayImg.class, DoubleType.class, DoubleArray.class } )
 				.set( "spark.rdd.compress", "true" )
-				//.set( "spark.executor.heartbeatInterval", "10000000" )
-				//.set( "spark.network.timeout", "10000000" )
 			);
 
 		try {
