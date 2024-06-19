@@ -50,13 +50,13 @@ public class ResaveAsSmallerTilesSpark implements Serializable, AutoCloseable
 				usage = "Path/link to a tile configuration JSON file. Multiple configurations can be passed at once.")
 		List< String > inputTileConfigurations;
 
-		@Option(name = "--darkfield-filename",
+		@Option(name = "--darkfield-file",
 				usage = "Name of the darkfield file")
-		String darkFieldFileName = "T.tif";
+		String darkFieldFilePath;
 
-		@Option(name = "--flatfield-filename",
+		@Option(name = "--flatfield-file",
 				usage = "Name of the flatfield file")
-		String flatFieldFileName = "S.tif";
+		String flatFieldFilePath;
 
 		@Option(name = "-t", aliases = { "--target" }, required = false,
 				usage = "Target location (filesystem directory or cloud bucket) to store the resulting tile images and configurations.")
@@ -159,8 +159,8 @@ public class ResaveAsSmallerTilesSpark implements Serializable, AutoCloseable
 		final RandomAccessiblePairNullable< U, U > flatfield = FlatfieldCorrection.loadCorrectionImages(
 				sourceDataProvider,
 				inputTileConfiguration,
-				args.darkFieldFileName,
-				args.flatFieldFileName,
+				args.darkFieldFilePath,
+				args.flatFieldFilePath,
 				tiles[ 0 ].numDimensions()
 		);
 		final Broadcast< RandomAccessiblePairNullable< U, U > > broadcastedFlatfield = sparkContext.broadcast( flatfield );

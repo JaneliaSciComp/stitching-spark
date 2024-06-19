@@ -396,8 +396,8 @@ public class PipelineStitchingStepExecutor extends PipelineStepExecutor
 		for ( final String channelPath : job.getArgs().correctionImagesPaths() )
 			flatfieldCorrectionForChannels.add( FlatfieldCorrection.loadCorrectionImages(
 					dataProvider, channelPath,
-					job.getArgs().darkFieldFileName(),
-					job.getArgs().flatFieldFileName(),
+					job.getArgs().darkFieldFilePath(),
+					job.getArgs().flatFieldFilePath(),
 					job.getDimensionality()
 			) );
 		final Broadcast< List< RandomAccessiblePairNullable< U, U > > > broadcastedFlatfieldCorrectionForChannels = sparkContext.broadcast( flatfieldCorrectionForChannels );

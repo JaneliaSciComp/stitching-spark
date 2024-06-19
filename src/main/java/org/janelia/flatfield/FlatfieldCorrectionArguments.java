@@ -25,13 +25,13 @@ public class FlatfieldCorrectionArguments
 			usage = "Path/link to a tile configuration JSON file. Multiple configuration (channels) can be passed at once.")
 	private List< String > inputChannelsPaths;
 
-	@Option(name = "--darkfield-filename",
+	@Option(name = "--darkfield-file",
 			usage = "Name of the darkfield file")
-	private String darkFieldFileName = "T.tif";
+	private String darkFieldFilePath;
 
-	@Option(name = "--flatfield-filename",
+	@Option(name = "--flatfield-file",
 			usage = "Name of the flatfield file")
-	private String flatFieldFileName = "S.tif";
+	private String flatFieldFilePath;
 
 	@Option(name = "--crop", required = false,
 			usage = "Crop interval in a form of xMin,yMin,zMin,xMax,yMax,zMax")
@@ -115,8 +115,8 @@ public class FlatfieldCorrectionArguments
 
 	public List< String > inputChannelsPaths() { return inputChannelsPaths; }
 	public String cropMinMaxIntervalStr() { return cropMinMaxInterval; };
-	public String darkFieldFileName() { return darkFieldFileName; }
-	public String flatFieldFileName() { return flatFieldFileName; }
+	public String darkFieldFilePath() { return darkFieldFilePath; }
+	public String flatFieldFilePath() { return flatFieldFilePath; }
 
 	public boolean use2D() { return use2D; }
 	public Pair< Double, Double > getMinMaxQuantiles() { return new ValuePair<>( histMinQuantile, histMaxQuantile ); }

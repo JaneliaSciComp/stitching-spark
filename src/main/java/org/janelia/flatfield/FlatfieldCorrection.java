@@ -84,14 +84,18 @@ public class FlatfieldCorrection implements Serializable, AutoCloseable
 	public static < U extends NativeType< U > & RealType< U > > RandomAccessiblePairNullable< U, U > loadCorrectionImages(
 			final DataProvider dataProvider,
 			final String basePath,
-			final String darkFieldFilename,
-			final String flatFieldFilename,
+			final String darkFieldFilePath,
+			final String flatFieldFilePath,
 			final int dimensionality ) throws IOException
 	{
 		final String flatfieldFolderPath = getFlatfieldFolderForBasePath( basePath );
 
-		final String flatFieldTermPath = PathResolver.get( flatfieldFolderPath, flatFieldFilename );
-		final String darkFieldTermPath = PathResolver.get( flatfieldFolderPath, darkFieldFilename );
+		final String darkFieldTermPath = darkFieldFilePath != null
+				? darkFieldFilePath
+				: PathResolver.get( flatfieldFolderPath, "T.tif" );
+		final String flatFieldTermPath = flatFieldFilePath != null
+				? flatFieldFilePath
+				:  PathResolver.get( flatfieldFolderPath, "S.tif" );
 
 		System.out.println( "Loading flat-field components:" );
 		System.out.println( "  " + flatFieldTermPath );
@@ -375,36 +379,39 @@ public class FlatfieldCorrection implements Serializable, AutoCloseable
 			}
 
 			lastSolutionMetadata = downsampledSolutionMetadata;
-
-			/*if ( iter % 2 == 0 && lastSolution.getB().numDimensions() > 2 )
-			{
-				final RandomAccessibleInterval< DoubleType > averageTranslationalComponent = averageSolutionComponent( lastSolution.getB() );
-				saveSolutionComponent( dataProvider, iter, 0, averageTranslationalComponent, Utils.addFilenameSuffix( translationTermFilename, "_avg" ) );
-
-				lastSolution = new ValuePair<>(
-						lastSolution.getA(),
-						Views.interval( Views.extendBorder( Views.stack( averageTranslationalComponent ) ), lastSolution.getA() ) );
-			}*/
 		}
 
 		// account for the pivot point in the final solution
 		final Pair< RandomAccessibleInterval< DoubleType >, RandomAccessibleInterval< DoubleType > > unpivotedSolution = FlatfieldCorrectionSolver.unpivotSolution(
 				lastSolutionMetadata.open( dataProvider, histogramsProvider.getHistogramsN5BasePath() ) );
 
-		saveSolutionComponent( dataProvider, solutionPath, iterations - 1, 0, unpivotedSolution.getA(), Utils.addFilenameSuffix( args.flatFieldFileName(), "_offset" ) );
-		saveSolutionComponent( dataProvider, solutionPath, iterations - 1, 0, unpivotedSolution.getB(), Utils.addFilenameSuffix( args.darkFieldFileName(), "_offset" ) );
-
-		// save final solution to the main folder for this channel
 		{
-			final ImagePlus sImp = ImageJFunctions.wrap( unpivotedSolution.getA(), args.flatFieldFileName() );
-			final String sImpPath = PathResolver.get( flatfieldFolderPath, args.flatFieldFileName() );
-			dataProvider.saveImage( sImp, sImpPath );
+			String flatFieldFilePath = getCorrectionFilePath(
+					args.flatFieldFilePath(),
+					flatfieldFolderPath,
+					"S.tif"
+			);
+			String flatFieldTitle = getCorrectionFileTitle(flatFieldFilePath);
+
+			saveSolutionComponent( dataProvider, solutionPath, iterations - 1, 0, unpivotedSolution.getA(), Utils.addFilenameSuffix( flatFieldTitle, "_offset" ) );
+
+			final ImagePlus sImp = ImageJFunctions.wrap( unpivotedSolution.getA(), flatFieldTitle );
+			// save final solution to the main folder for this channel
+			dataProvider.saveImage( sImp, flatFieldFilePath );
 		}
 
 		{
-			final ImagePlus tImp = ImageJFunctions.wrap( unpivotedSolution.getB(), args.darkFieldFileName() );
-			final String tImpPath = PathResolver.get( flatfieldFolderPath, args.darkFieldFileName() );
-			dataProvider.saveImage( tImp, tImpPath );
+			String darkFieldFilePath = getCorrectionFilePath(
+					args.darkFieldFilePath(),
+					flatfieldFolderPath,
+					"T.tif"
+			);
+			String darkFieldTitle = getCorrectionFileTitle(darkFieldFilePath);
+
+			saveSolutionComponent( dataProvider, solutionPath, iterations - 1, 0, unpivotedSolution.getB(), Utils.addFilenameSuffix( darkFieldTitle, "_offset" ) );
+
+			final ImagePlus tImp = ImageJFunctions.wrap( unpivotedSolution.getB(), darkFieldTitle );
+			dataProvider.saveImage( tImp, darkFieldFilePath );
 		}
 
 
@@ -421,6 +428,17 @@ public class FlatfieldCorrection implements Serializable, AutoCloseable
 		elapsed = System.nanoTime() - elapsed;
 		System.out.println( "----------" );
 		System.out.println( String.format( "Took %f mins", elapsed / 1e9 / 60 ) );
+	}
+
+	private String getCorrectionFilePath(String argValue, String folderPath, String defaultValue)
+	{
+		return argValue != null ? argValue : PathResolver.get( folderPath, defaultValue );
+	}
+
+	private String getCorrectionFileTitle(String correctionFile)
+	{
+		int compSeparator = correctionFile.lastIndexOf('/');
+		return compSeparator == -1 ? correctionFile : correctionFile.substring(compSeparator + 1);
 	}
 
 	private int findStartingScale( final ShiftedDownsampling< ? > shiftedDownsampling )

@@ -70,13 +70,13 @@ public class DeconvolutionSpark
 				usage = "Path to an input tile configuration file. Multiple configurations (channels) can be passed at once.")
 		private List< String > inputChannelsPaths;
 
-		@Option(name = "--darkfield-filename",
+		@Option(name = "--darkfield-file",
 				usage = "Name of the darkfield file")
-		private String darkFieldFileName = "T.tif";
+		private String darkFieldFilePath;
 
-		@Option(name = "--flatfield-filename",
+		@Option(name = "--flatfield-file",
 				usage = "Name of the flatfield file")
-		private String flatFieldFileName = "S.tif";
+		private String flatFieldFilePath;
 
 		@Option(name = "-p", aliases = { "--psfPath" }, required = true,
 				usage = "Path to the point-spread function images. In case of multiple input channels, their corresponding PSFs must be passed in the same order.")
@@ -269,8 +269,8 @@ public class DeconvolutionSpark
 				channelFlatfields.add( FlatfieldCorrection.loadCorrectionImages(
 						dataProvider,
 						channelPath,
-						parsedArgs.darkFieldFileName,
-						parsedArgs.flatFieldFileName,
+						parsedArgs.darkFieldFilePath,
+						parsedArgs.flatFieldFilePath,
 						inputTileChannels.get( 0 )[ 0 ].numDimensions()
 				) );
 			final Broadcast< List< RandomAccessiblePairNullable< U, U > > > broadcastedChannelFlatfields = sparkContext.broadcast( channelFlatfields );

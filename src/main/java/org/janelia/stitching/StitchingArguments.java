@@ -44,13 +44,13 @@ public class StitchingArguments implements Serializable {
 			usage = "Path/link to correction images")
 	private List< String > correctionImagesPaths;
 
-	@Option(name = "--darkfield-filename",
+	@Option(name = "--darkfield-file",
 			usage = "Name of the darkfield file")
-	private String darkFieldFileName = "T.tif";
+	private String darkFieldFilePath;
 
-	@Option(name = "--flatfield-filename",
+	@Option(name = "--flatfield-file",
 			usage = "Name of the flatfield file")
-	private String flatFieldFileName = "S.tif";
+	private String flatFieldFilePath;
 
 	@Option(name = "-r", aliases = { "--registrationChannelIndex" }, required = false,
 			usage = "Index of the input channel to be used for registration (indexing starts from 0). If omitted or equal to -1, all input channels will be used for registration by averaging the tile images.")
@@ -242,8 +242,8 @@ public class StitchingArguments implements Serializable {
 
 	public List< String > inputTileConfigurations() { return inputTileConfigurations; }
 	public List< String > correctionImagesPaths() { return correctionImagesPaths; }
-	public String darkFieldFileName() { return darkFieldFileName; }
-	public String flatFieldFileName() { return flatFieldFileName; }
+	public String darkFieldFilePath() { return darkFieldFilePath; }
+	public String flatFieldFilePath() { return flatFieldFilePath; }
 	public Integer registrationChannelIndex() { return registrationChannelIndex; }
 	public int minStatsNeighborhood() { return minStatsNeighborhood; }
 	public int fusionCellSize() { return fusionCellSize; }

@@ -26,8 +26,8 @@ public class ExtractDarkfield
 	{
 		run(
 				args[ 0 ],
-				args.length > 3 ? args[3] : "T.tif",
-				args.length > 4 ? args[4] : "S.tif",
+				args.length > 3 ? args[3] : null,
+				args.length > 4 ? args[4] : null,
 				Double.parseDouble( args[ 1 ] ),
 				args.length > 2 && args[ 2 ].equals( "--2d" )
 			);

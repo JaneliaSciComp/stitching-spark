@@ -22,8 +22,8 @@ public class ApplyFlatfieldCorrection
 	public static < T extends NativeType< T > & RealType< T >, U extends NativeType< U > & RealType< U > > void main( final String[] args ) throws Exception
 	{
 		final String inputTileConfiguration = args[ 0 ];
-		final String darkFieldFilename = args.length > 1 ? args[1] : "T.tif";
-		final String flatFieldFilename = args.length > 2 ? args[2] : "S.tif";
+		final String darkFieldFilename = args.length > 1 ? args[1] : null;
+		final String flatFieldFilename = args.length > 2 ? args[2] : null;
 		final DataProvider dataProvider = DataProviderFactory.create( DataProviderFactory.detectType( inputTileConfiguration ) );
 		final TileInfo[] tiles = dataProvider.loadTiles( inputTileConfiguration );
 		final RandomAccessiblePairNullable< U, U > flatfield = FlatfieldCorrection.loadCorrectionImages(
