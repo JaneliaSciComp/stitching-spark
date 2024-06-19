@@ -22,9 +22,17 @@ public class ApplyFlatfieldCorrection
 	public static < T extends NativeType< T > & RealType< T >, U extends NativeType< U > & RealType< U > > void main( final String[] args ) throws Exception
 	{
 		final String inputTileConfiguration = args[ 0 ];
+		final String darkFieldFilename = args.length > 1 ? args[1] : "T.tif";
+		final String flatFieldFilename = args.length > 2 ? args[2] : "S.tif";
 		final DataProvider dataProvider = DataProviderFactory.create( DataProviderFactory.detectType( inputTileConfiguration ) );
 		final TileInfo[] tiles = dataProvider.loadTiles( inputTileConfiguration );
-		final RandomAccessiblePairNullable< U, U > flatfield = FlatfieldCorrection.loadCorrectionImages( dataProvider, inputTileConfiguration, tiles[ 0 ].numDimensions() );
+		final RandomAccessiblePairNullable< U, U > flatfield = FlatfieldCorrection.loadCorrectionImages(
+				dataProvider,
+				inputTileConfiguration,
+				darkFieldFilename,
+				flatFieldFilename,
+				tiles[ 0 ].numDimensions()
+		);
 		if ( flatfield == null )
 			throw new NullPointerException( "flatfield images were not found" );
 

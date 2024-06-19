@@ -129,6 +129,8 @@ public class PipelineFusionStepExecutor< T extends NativeType< T > & RealType< T
 			final RandomAccessiblePairNullable< U, U >  flatfieldCorrection = FlatfieldCorrection.loadCorrectionImages(
 					dataProvider,
 					channelCorrectionPath,
+					job.getArgs().darkFieldFileName(),
+					job.getArgs().flatFieldFileName(),
 					job.getDimensionality()
 				);
 			if ( flatfieldCorrection != null )

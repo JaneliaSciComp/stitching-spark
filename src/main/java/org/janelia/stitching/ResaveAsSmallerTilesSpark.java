@@ -48,23 +48,31 @@ public class ResaveAsSmallerTilesSpark implements Serializable, AutoCloseable
 
 		@Option(name = "-i", aliases = { "--input" }, required = true,
 				usage = "Path/link to a tile configuration JSON file. Multiple configurations can be passed at once.")
-		public List< String > inputTileConfigurations;
+		List< String > inputTileConfigurations;
+
+		@Option(name = "--darkfield-filename",
+				usage = "Name of the darkfield file")
+		String darkFieldFileName = "T.tif";
+
+		@Option(name = "--flatfield-filename",
+				usage = "Name of the flatfield file")
+		String flatFieldFileName = "S.tif";
 
 		@Option(name = "-t", aliases = { "--target" }, required = false,
 				usage = "Target location (filesystem directory or cloud bucket) to store the resulting tile images and configurations.")
-		public String targetLocation;
+		String targetLocation;
 
 		@Option(name = "-d", aliases = { "--dimension" }, required = false,
 				usage = "Dimension to retile (Z by default)")
-		public int retileDimension = 2;
+		int retileDimension = 2;
 
 		@Option(name = "-s", aliases = { "--size" }, required = false,
 				usage = "Size of a new tile in the retile dimension. Default is 64 pixels")
-		public Integer retileSize = 64;
+		Integer retileSize = 64;
 
 		@Option(name = "-o", aliases = { "--overlap" }, required = false,
 				usage = "Overlap on each side as a ratio relative to the new tile size. This is only an initial guess, where the actual overlap is determined based on the size of the volume such that all tiles have the same size.")
-		public double minOverlapRatioEachSide = 0.1;
+		double minOverlapRatioEachSide = 0.1;
 
 		public boolean parsedSuccessfully = false;
 
@@ -148,7 +156,13 @@ public class ResaveAsSmallerTilesSpark implements Serializable, AutoCloseable
 
 		final Broadcast< List< Interval > > broadcastedNewTilesIntervalsInSingleTile = sparkContext.broadcast( newTilesIntervalsInSingleTile );
 
-		final RandomAccessiblePairNullable< U, U > flatfield = FlatfieldCorrection.loadCorrectionImages( sourceDataProvider, inputTileConfiguration, tiles[ 0 ].numDimensions() );
+		final RandomAccessiblePairNullable< U, U > flatfield = FlatfieldCorrection.loadCorrectionImages(
+				sourceDataProvider,
+				inputTileConfiguration,
+				args.darkFieldFileName,
+				args.flatFieldFileName,
+				tiles[ 0 ].numDimensions()
+		);
 		final Broadcast< RandomAccessiblePairNullable< U, U > > broadcastedFlatfield = sparkContext.broadcast( flatfield );
 
 		final List< TileInfo > newTiles = sparkContext.parallelize( Arrays.asList( tiles ), tiles.length ).flatMap(

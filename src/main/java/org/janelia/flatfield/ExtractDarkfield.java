@@ -26,16 +26,29 @@ public class ExtractDarkfield
 	{
 		run(
 				args[ 0 ],
+				args.length > 3 ? args[3] : "T.tif",
+				args.length > 4 ? args[4] : "S.tif",
 				Double.parseDouble( args[ 1 ] ),
 				args.length > 2 && args[ 2 ].equals( "--2d" )
 			);
 	}
 
 	@SuppressWarnings( { "rawtypes", "unchecked" } )
-	private static < U extends NativeType< U > & RealType< U > > void run( final String basePath, final double pivotValue, final boolean is2d ) throws IOException, ImgLibException
+	private static < U extends NativeType< U > & RealType< U > > void run(
+			final String basePath,
+			final String darkFileFilename,
+			final String flatFieldFilename,
+			final double pivotValue,
+			final boolean is2d ) throws IOException, ImgLibException
 	{
 		final DataProvider dataProvider = DataProviderFactory.create( DataProviderFactory.detectType( basePath ) );
-		final RandomAccessiblePairNullable< U, U > flatfield = FlatfieldCorrection.loadCorrectionImages( dataProvider, Utils.removeFilenameSuffix( basePath, "-flatfield" ), is2d ? 2 : 3 );
+		final RandomAccessiblePairNullable< U, U > flatfield = FlatfieldCorrection.loadCorrectionImages(
+				dataProvider,
+				Utils.removeFilenameSuffix( basePath, "-flatfield" ),
+				darkFileFilename,
+				flatFieldFilename,
+				is2d ? 2 : 3
+		);
 		final ImagePlusImg< U, ? > darkfield = new ImagePlusImgFactory<>( ( U ) Util.getTypeFromInterval( ( RandomAccessibleInterval) flatfield.getA() ) ).create( ( Dimensions ) flatfield.getA() );
 		final Cursor< U > scalingCursor = Views.flatIterable( ( RandomAccessibleInterval ) flatfield.getA() ).cursor();
 		final Cursor< U > translationCursor = Views.flatIterable( ( RandomAccessibleInterval ) flatfield.getB() ).cursor();

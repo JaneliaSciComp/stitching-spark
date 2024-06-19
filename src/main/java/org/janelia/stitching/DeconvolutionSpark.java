@@ -70,6 +70,14 @@ public class DeconvolutionSpark
 				usage = "Path to an input tile configuration file. Multiple configurations (channels) can be passed at once.")
 		private List< String > inputChannelsPaths;
 
+		@Option(name = "--darkfield-filename",
+				usage = "Name of the darkfield file")
+		private String darkFieldFileName = "T.tif";
+
+		@Option(name = "--flatfield-filename",
+				usage = "Name of the flatfield file")
+		private String flatFieldFileName = "S.tif";
+
 		@Option(name = "-p", aliases = { "--psfPath" }, required = true,
 				usage = "Path to the point-spread function images. In case of multiple input channels, their corresponding PSFs must be passed in the same order.")
 		private List< String > psfPaths;
@@ -258,7 +266,13 @@ public class DeconvolutionSpark
 			// initialize flatfields for each channel
 			final List< RandomAccessiblePairNullable< U, U > > channelFlatfields = new ArrayList<>();
 			for ( final String channelPath : parsedArgs.inputChannelsPaths )
-				channelFlatfields.add( FlatfieldCorrection.loadCorrectionImages( dataProvider, channelPath, inputTileChannels.get( 0 )[ 0 ].numDimensions() ) );
+				channelFlatfields.add( FlatfieldCorrection.loadCorrectionImages(
+						dataProvider,
+						channelPath,
+						parsedArgs.darkFieldFileName,
+						parsedArgs.flatFieldFileName,
+						inputTileChannels.get( 0 )[ 0 ].numDimensions()
+				) );
 			final Broadcast< List< RandomAccessiblePairNullable< U, U > > > broadcastedChannelFlatfields = sparkContext.broadcast( channelFlatfields );
 
 			sparkContext.parallelize( channelIndicesAndTileBlocks, Math.min( channelIndicesAndTileBlocks.size(), MAX_PARTITIONS ) ).foreach( tileBlockAndChannelIndex ->
