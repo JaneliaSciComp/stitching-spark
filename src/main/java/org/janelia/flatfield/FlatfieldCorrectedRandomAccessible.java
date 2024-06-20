@@ -165,7 +165,7 @@ public class FlatfieldCorrectedRandomAccessible< T extends RealType< T >, U exte
 		@Override
 		public U get()
 		{
-			value.setReal( (sourceRandomAccess.get().getRealDouble() - flatfieldRandomAccess.getB().getRealDouble()) / flatfieldRandomAccess.getA().getRealDouble() );
+			value.setReal( sourceRandomAccess.get().getRealDouble() * flatfieldRandomAccess.getA().getRealDouble() + flatfieldRandomAccess.getB().getRealDouble() );
 			return value;
 		}
 

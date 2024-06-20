@@ -7,6 +7,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.TreeMap;
 
+import net.imglib2.converter.Converter;
+import net.imglib2.converter.Converters;
+import net.imglib2.converter.readwrite.SamplerConverter;
 import net.imglib2.img.array.ArrayImgFactory;
 import net.imglib2.util.Util;
 import org.apache.spark.SparkConf;
@@ -52,6 +55,8 @@ public class FlatfieldCorrection implements Serializable, AutoCloseable
 	private static final long serialVersionUID = -8987192045944606043L;
 
 	public static final String flatfieldFolderSuffix = "-flatfield";
+	public static final String defaultScalingTermFilename = "S.tif";
+	public static final String defaultTranslationTermFilename = "T.tif";
 
 	public static final String pivotValueAttributeKey = "pivotValue";
 
@@ -59,7 +64,6 @@ public class FlatfieldCorrection implements Serializable, AutoCloseable
 	public static final String referenceHistogramSettingsAttributeKey = "referenceHistogramSettings";
 
 	private static final int SCALE_LEVEL_MIN_PIXELS = 1;
-//	private static final int AVERAGE_SKIP_SLICES = 5;
 
 	private static final HistogramSettings defaultStackHistogramSettings = new HistogramSettings( 0., 16383., 4098 );
 
@@ -88,40 +92,93 @@ public class FlatfieldCorrection implements Serializable, AutoCloseable
 			final String flatFieldFilePath,
 			final int dimensionality ) throws IOException
 	{
+		if (darkFieldFilePath != null && flatFieldFilePath != null) {
+			return loadBasicCorrectionImages(dataProvider, darkFieldFilePath, flatFieldFilePath, dimensionality);
+		} else {
+			return loadDefaultCorrectionImages(dataProvider, basePath, dimensionality);
+		}
+	}
+
+	public static < U extends NativeType< U > & RealType< U > > RandomAccessiblePairNullable< U, U > loadDefaultCorrectionImages(
+			final DataProvider dataProvider,
+			final String basePath,
+			final int dimensionality ) throws IOException {
 		final String flatfieldFolderPath = getFlatfieldFolderForBasePath( basePath );
 
-		final String darkFieldTermPath = darkFieldFilePath != null
-				? darkFieldFilePath
-				: PathResolver.get( flatfieldFolderPath, "T.tif" );
-		final String flatFieldTermPath = flatFieldFilePath != null
-				? flatFieldFilePath
-				:  PathResolver.get( flatfieldFolderPath, "S.tif" );
+		final String scalingTermPath = PathResolver.get( flatfieldFolderPath, defaultScalingTermFilename );
+		final String translationTermPath = PathResolver.get( flatfieldFolderPath, defaultTranslationTermFilename );
 
-		System.out.println( "Loading flat-field components:" );
-		System.out.println( "  " + flatFieldTermPath );
-		System.out.println( "  " + darkFieldTermPath );
+		System.out.println( "Loading default flat-field components:" );
+		System.out.println( "  " + scalingTermPath );
+		System.out.println( "  " + translationTermPath );
 
-		if ( !dataProvider.exists( flatFieldTermPath ) || !dataProvider.exists( darkFieldTermPath ) )
+		if ( !dataProvider.exists( scalingTermPath ) || !dataProvider.exists( translationTermPath ) )
 		{
-			System.out.println( "  -- Flat-field images do not exist" );
+			System.out.println( "  -- Default flat-field images do not exist" );
 			return null;
 		}
 
-		final ImagePlus flatFieldTermImp = dataProvider.loadImage( flatFieldTermPath );
-		final ImagePlus darkFieldTermImp = dataProvider.loadImage( darkFieldTermPath );
+		final ImagePlus scalingTermImp = dataProvider.loadImage( scalingTermPath );
+		final ImagePlus translationTermImp = dataProvider.loadImage( translationTermPath );
 
-		final RandomAccessibleInterval< U > flatFieldTermWrappedImg = ImagePlusImgs.from( flatFieldTermImp );
-		final RandomAccessibleInterval< U > darkFieldTermWrappedImg = ImagePlusImgs.from( darkFieldTermImp );
+		final RandomAccessibleInterval< U > scalingTermWrappedImg = ImagePlusImgs.from( scalingTermImp );
+		final RandomAccessibleInterval< U > translationTermWrappedImg = ImagePlusImgs.from( translationTermImp );
 
 		// NOTE: these images could be broadcasted by the caller, and this may cause problems with Cloud backends.
 		// Copy the images to avoid this problem. See the following issues for more details: https://github.com/saalfeldlab/stitching-spark/issues/27
-		final RandomAccessibleInterval< U > flatFieldTermImg = copyImage( flatFieldTermWrappedImg );
-		final RandomAccessibleInterval< U > darkFieldTermImg = copyImage( darkFieldTermWrappedImg );
+		final RandomAccessibleInterval< U > scalingTermImg = copyImage( scalingTermWrappedImg );
+		final RandomAccessibleInterval< U > translationTermImg = copyImage( translationTermWrappedImg );
 
-		final RandomAccessible< U > flatFieldTermImgExtended = ( flatFieldTermImg.numDimensions() < dimensionality ? Views.extendBorder( Views.stack( flatFieldTermImg ) ) : flatFieldTermImg );
-		final RandomAccessible< U > darkFieldTermImgExtended = ( darkFieldTermImg.numDimensions() < dimensionality ? Views.extendBorder( Views.stack( darkFieldTermImg ) ) : darkFieldTermImg );
+		final RandomAccessible< U > scalingTermImgExtended = ( scalingTermImg.numDimensions() < dimensionality ? Views.extendBorder( Views.stack( scalingTermImg ) ) : scalingTermImg );
+		final RandomAccessible< U > translationTermImgExtended = ( translationTermImg.numDimensions() < dimensionality ? Views.extendBorder( Views.stack( translationTermImg ) ) : translationTermImg );
 
-		return new RandomAccessiblePairNullable<>( flatFieldTermImgExtended, darkFieldTermImgExtended );
+		return new RandomAccessiblePairNullable<>( scalingTermImgExtended, translationTermImgExtended );
+	}
+
+	public static < U extends NativeType< U > & RealType< U > > RandomAccessiblePairNullable< U, U > loadBasicCorrectionImages(
+			final DataProvider dataProvider,
+			final String darkFieldPath,
+			final String flatFieldPath,
+			final int dimensionality ) throws IOException {
+		System.out.println( "Loading basic flat-field components:" );
+		System.out.println( "  Dark field path: " + darkFieldPath );
+		System.out.println( "  Flat field path:" + flatFieldPath );
+
+		if ( !dataProvider.exists( darkFieldPath ) || !dataProvider.exists( flatFieldPath ) )
+		{
+			System.out.println( "  -- Basic flat-field images do not exist" );
+			return null;
+		}
+
+		final ImagePlus darkFieldImp = dataProvider.loadImage( darkFieldPath );
+		final ImagePlus flatFieldImp = dataProvider.loadImage( flatFieldPath );
+
+		final RandomAccessibleInterval< U > darkFieldWrappedImg = ImagePlusImgs.from( darkFieldImp );
+		final RandomAccessibleInterval< U > flatFieldWrappedImg = ImagePlusImgs.from( flatFieldImp );
+
+		// NOTE: these images could be broadcasted by the caller, and this may cause problems with Cloud backends.
+		// Copy the images to avoid this problem. See the following issues for more details: https://github.com/saalfeldlab/stitching-spark/issues/27
+		final RandomAccessibleInterval< U > darkFieldImg = copyImage( darkFieldWrappedImg );
+		final RandomAccessibleInterval< U > flatFieldImg = copyImage( flatFieldWrappedImg );
+
+		final RandomAccessible< U > darkFieldImgExtended = ( darkFieldImg.numDimensions() < dimensionality ? Views.extendBorder( Views.stack( darkFieldImg ) ) : darkFieldImg );
+		final RandomAccessible< U > flatFieldImgExtended = ( flatFieldImg.numDimensions() < dimensionality ? Views.extendBorder( Views.stack( flatFieldImg ) ) : flatFieldImg );
+
+		// scale by (1 / flatfield)
+		final RandomAccessible< U > scalingTermImgExtended = Converters.convert(
+				flatFieldImgExtended,
+				(input, output) -> output.setReal(1 /  + input.getRealDouble()),
+				flatFieldImgExtended.randomAccess().get()
+		);
+
+		// translate by (-darkfield / flatfield)
+		final RandomAccessible< U > translationTermImgExtended = Converters.convert(
+				Views.pair(darkFieldImgExtended, flatFieldImgExtended),
+				(input, output) -> output.setReal(-input.getA().getRealDouble() / input.getB().getRealDouble()),
+				flatFieldImgExtended.randomAccess().get()
+		);
+
+		return new RandomAccessiblePairNullable<>( scalingTermImgExtended, translationTermImgExtended );
 	}
 
 	private static < U extends NativeType< U > & RealType< U > > RandomAccessibleInterval< U > copyImage( final RandomAccessibleInterval< U > img )
@@ -385,33 +442,20 @@ public class FlatfieldCorrection implements Serializable, AutoCloseable
 		final Pair< RandomAccessibleInterval< DoubleType >, RandomAccessibleInterval< DoubleType > > unpivotedSolution = FlatfieldCorrectionSolver.unpivotSolution(
 				lastSolutionMetadata.open( dataProvider, histogramsProvider.getHistogramsN5BasePath() ) );
 
+		saveSolutionComponent( dataProvider, solutionPath, iterations - 1, 0, unpivotedSolution.getA(), Utils.addFilenameSuffix( defaultScalingTermFilename, "_offset" ) );
+		saveSolutionComponent( dataProvider, solutionPath, iterations - 1, 0, unpivotedSolution.getB(), Utils.addFilenameSuffix( defaultTranslationTermFilename, "_offset" ) );
+
+		// save final solution to the main folder for this channel
 		{
-			String flatFieldFilePath = getCorrectionFilePath(
-					args.flatFieldFilePath(),
-					flatfieldFolderPath,
-					"S.tif"
-			);
-			String flatFieldTitle = getCorrectionFileTitle(flatFieldFilePath);
-
-			saveSolutionComponent( dataProvider, solutionPath, iterations - 1, 0, unpivotedSolution.getA(), Utils.addFilenameSuffix( flatFieldTitle, "_offset" ) );
-
-			final ImagePlus sImp = ImageJFunctions.wrap( unpivotedSolution.getA(), flatFieldTitle );
-			// save final solution to the main folder for this channel
-			dataProvider.saveImage( sImp, flatFieldFilePath );
+			final ImagePlus sImp = ImageJFunctions.wrap( unpivotedSolution.getA(), defaultScalingTermFilename );
+			final String sImpPath = PathResolver.get( flatfieldFolderPath, defaultScalingTermFilename );
+			dataProvider.saveImage( sImp, sImpPath );
 		}
 
 		{
-			String darkFieldFilePath = getCorrectionFilePath(
-					args.darkFieldFilePath(),
-					flatfieldFolderPath,
-					"T.tif"
-			);
-			String darkFieldTitle = getCorrectionFileTitle(darkFieldFilePath);
-
-			saveSolutionComponent( dataProvider, solutionPath, iterations - 1, 0, unpivotedSolution.getB(), Utils.addFilenameSuffix( darkFieldTitle, "_offset" ) );
-
-			final ImagePlus tImp = ImageJFunctions.wrap( unpivotedSolution.getB(), darkFieldTitle );
-			dataProvider.saveImage( tImp, darkFieldFilePath );
+			final ImagePlus tImp = ImageJFunctions.wrap( unpivotedSolution.getB(), defaultTranslationTermFilename );
+			final String tImpPath = PathResolver.get( flatfieldFolderPath, defaultTranslationTermFilename );
+			dataProvider.saveImage( tImp, tImpPath );
 		}
 
 
@@ -428,17 +472,6 @@ public class FlatfieldCorrection implements Serializable, AutoCloseable
 		elapsed = System.nanoTime() - elapsed;
 		System.out.println( "----------" );
 		System.out.println( String.format( "Took %f mins", elapsed / 1e9 / 60 ) );
-	}
-
-	private String getCorrectionFilePath(String argValue, String folderPath, String defaultValue)
-	{
-		return argValue != null ? argValue : PathResolver.get( folderPath, defaultValue );
-	}
-
-	private String getCorrectionFileTitle(String correctionFile)
-	{
-		int compSeparator = correctionFile.lastIndexOf('/');
-		return compSeparator == -1 ? correctionFile : correctionFile.substring(compSeparator + 1);
 	}
 
 	private int findStartingScale( final ShiftedDownsampling< ? > shiftedDownsampling )
