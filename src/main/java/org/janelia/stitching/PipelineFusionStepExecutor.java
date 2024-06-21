@@ -169,14 +169,22 @@ public class PipelineFusionStepExecutor< T extends NativeType< T > & RealType< T
 					voxelDimensions
 				);
 
-			// Generate lower scale levels
-			downsampledDatasets = N5NonIsotropicScalePyramidSpark.downsampleNonIsotropicScalePyramid(
-					sparkContext,
-					() -> DataProviderFactory.create( dataProviderType ).createN5Writer( n5ExportPath ),
-					fullScaleOutputPath,
-					voxelDimensions,
-					false // not a power of two scale pyramid
+			// check if lower scale levels (s1 - specifically) exists and if they don't generate the pyramid
+			String s1ScalePath = fullScaleOutputPath.replaceFirst("s0/", "s1/");
+
+			if ( !n5.datasetExists(s1ScalePath) ) {
+				System.out.printf("Generate the pyramid - %s was not found\n");
+				// Generate lower scale levels
+				downsampledDatasets = N5NonIsotropicScalePyramidSpark.downsampleNonIsotropicScalePyramid(
+						sparkContext,
+						() -> DataProviderFactory.create( dataProviderType ).createN5Writer( n5ExportPath ),
+						fullScaleOutputPath,
+						voxelDimensions,
+						false // not a power of two scale pyramid
 				);
+			} else {
+				System.out.printf("Found %s so we assume the pyramid already exists\n");
+			}
 
 			broadcastedPairwiseConnectionsMap.destroy();
 			broadcastedFlatfieldCorrection.destroy();
@@ -184,16 +192,20 @@ public class PipelineFusionStepExecutor< T extends NativeType< T > & RealType< T
 
 		System.out.println( "All channels have been exported" );
 
-		// TODO: remove and make n5-viewer to look for downsampling factors attributes by itself
-		final double[][] scalesDouble = new double[ downsampledDatasets.size() + 1 ][];
-		scalesDouble[ 0 ] = new double[ job.getDimensionality() ];
-		Arrays.fill( scalesDouble[ 0 ], 1 );
-		for ( int s = 0; s < downsampledDatasets.size(); ++s )
-			scalesDouble[ s + 1 ] = Conversions.toDoubleArray( n5.getAttribute( downsampledDatasets.get( s ), "downsamplingFactors", int[].class ) );
-
 		final N5ExportMetadataWriter exportMetadata = N5ExportMetadata.openForWriting( n5 );
-		exportMetadata.setDefaultScales( scalesDouble );
 		exportMetadata.setDefaultPixelResolution( new FinalVoxelDimensions( "um", voxelDimensions ) );
+
+		if (downsampledDatasets != null) {
+			// TODO: remove and make n5-viewer to look for downsampling factors attributes by itself
+			final double[][] scalesDouble = new double[ downsampledDatasets.size() + 1 ][];
+			scalesDouble[ 0 ] = new double[ job.getDimensionality() ];
+			Arrays.fill( scalesDouble[ 0 ], 1 );
+
+			for ( int s = 0; s < downsampledDatasets.size(); ++s )
+				scalesDouble[ s + 1 ] = Conversions.toDoubleArray( n5.getAttribute( downsampledDatasets.get( s ), "downsamplingFactors", int[].class ) );
+
+			exportMetadata.setDefaultScales( scalesDouble );
+		}
 	}
 
 	private String getJobOutputFromInputs() {
