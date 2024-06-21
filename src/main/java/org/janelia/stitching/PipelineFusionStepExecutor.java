@@ -194,18 +194,6 @@ public class PipelineFusionStepExecutor< T extends NativeType< T > & RealType< T
 
 		final N5ExportMetadataWriter exportMetadata = N5ExportMetadata.openForWriting( n5 );
 		exportMetadata.setDefaultPixelResolution( new FinalVoxelDimensions( "um", voxelDimensions ) );
-
-		if (downsampledDatasets != null) {
-			// TODO: remove and make n5-viewer to look for downsampling factors attributes by itself
-			final double[][] scalesDouble = new double[ downsampledDatasets.size() + 1 ][];
-			scalesDouble[ 0 ] = new double[ job.getDimensionality() ];
-			Arrays.fill( scalesDouble[ 0 ], 1 );
-
-			for ( int s = 0; s < downsampledDatasets.size(); ++s )
-				scalesDouble[ s + 1 ] = Conversions.toDoubleArray( n5.getAttribute( downsampledDatasets.get( s ), "downsamplingFactors", int[].class ) );
-
-			exportMetadata.setDefaultScales( scalesDouble );
-		}
 	}
 
 	private String getJobOutputFromInputs() {
