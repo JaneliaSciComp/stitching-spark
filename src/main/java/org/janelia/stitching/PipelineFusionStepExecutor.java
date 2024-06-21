@@ -170,7 +170,7 @@ public class PipelineFusionStepExecutor< T extends NativeType< T > & RealType< T
 				);
 
 			// check if lower scale levels (s1 - specifically) exists and if they don't generate the pyramid
-			String s1ScalePath = fullScaleOutputPath.replaceFirst("s0/", "s1/");
+			String s1ScalePath = fullScaleOutputPath.replaceFirst("/s0$", "/s1");
 
 			if ( !n5.datasetExists(s1ScalePath) ) {
 				System.out.printf("Generate the pyramid - %s was not found\n", s1ScalePath);
