@@ -125,8 +125,8 @@ public class FlatfieldCorrection implements Serializable, AutoCloseable
 		final String translationTermPath = PathResolver.get( flatfieldFolderPath, defaultTranslationTermFilename );
 
 		System.out.println( "Loading default flat-field components:" );
-		System.out.println( "  " + scalingTermPath );
-		System.out.println( "  " + translationTermPath );
+		System.out.println( "  S: " + scalingTermPath );
+		System.out.println( "  T: " + translationTermPath );
 
 		if ( !dataProvider.exists( scalingTermPath ) || !dataProvider.exists( translationTermPath ) )
 		{
@@ -158,7 +158,7 @@ public class FlatfieldCorrection implements Serializable, AutoCloseable
 			final int dimensionality ) throws IOException {
 		System.out.println( "Loading basic flat-field components:" );
 		System.out.println( "  Dark field path: " + darkFieldPath );
-		System.out.println( "  Flat field path:" + flatFieldPath );
+		System.out.println( "  Flat field path: " + flatFieldPath );
 
 		if ( !dataProvider.exists( darkFieldPath ) || !dataProvider.exists( flatFieldPath ) )
 		{
