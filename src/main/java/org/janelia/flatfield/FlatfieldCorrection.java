@@ -71,6 +71,22 @@ public class FlatfieldCorrection implements Serializable, AutoCloseable
 
 	private final FlatfieldCorrectionArguments args;
 
+	private static class Flatfield2ScalingFieldConverter<A extends NativeType<A> & RealType<A>,
+														 B extends NativeType<B> & RealType<B>> implements Converter<A, B>, Serializable {
+		@Override
+		public void convert(A input, B output) {
+			output.setReal(1 /  + input.getRealDouble());
+		}
+	}
+
+	private static class FlatAndDarkfield2TranslationFieldConverter<A extends NativeType<A> & RealType<A>,
+																	B extends NativeType<B> & RealType<B>> implements Converter<Pair<A, A>, B>, Serializable {
+		@Override
+		public void convert(Pair<A, A> input, B output) {
+			output.setReal(-input.getA().getRealDouble() / input.getB().getRealDouble());
+		}
+	}
+
 	public static void main( final String[] args ) throws CmdLineException, IOException, URISyntaxException
 	{
 		final FlatfieldCorrectionArguments argsParsed = new FlatfieldCorrectionArguments( args );
@@ -167,14 +183,14 @@ public class FlatfieldCorrection implements Serializable, AutoCloseable
 		// scale by (1 / flatfield)
 		final RandomAccessible< U > scalingTermImgExtended = Converters.convert(
 				flatFieldImgExtended,
-				(input, output) -> output.setReal(1 /  + input.getRealDouble()),
+				new Flatfield2ScalingFieldConverter<>(),
 				flatFieldImgExtended.randomAccess().get()
 		);
 
 		// translate by (-darkfield / flatfield)
 		final RandomAccessible< U > translationTermImgExtended = Converters.convert(
 				Views.pair(darkFieldImgExtended, flatFieldImgExtended),
-				(input, output) -> output.setReal(-input.getA().getRealDouble() / input.getB().getRealDouble()),
+				new FlatAndDarkfield2TranslationFieldConverter<>(),
 				flatFieldImgExtended.randomAccess().get()
 		);
 
