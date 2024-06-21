@@ -173,7 +173,7 @@ public class PipelineFusionStepExecutor< T extends NativeType< T > & RealType< T
 			String s1ScalePath = fullScaleOutputPath.replaceFirst("s0/", "s1/");
 
 			if ( !n5.datasetExists(s1ScalePath) ) {
-				System.out.printf("Generate the pyramid - %s was not found\n");
+				System.out.printf("Generate the pyramid - %s was not found\n", s1ScalePath);
 				// Generate lower scale levels
 				downsampledDatasets = N5NonIsotropicScalePyramidSpark.downsampleNonIsotropicScalePyramid(
 						sparkContext,
@@ -183,7 +183,7 @@ public class PipelineFusionStepExecutor< T extends NativeType< T > & RealType< T
 						false // not a power of two scale pyramid
 				);
 			} else {
-				System.out.printf("Found %s so we assume the pyramid already exists\n");
+				System.out.printf("Found %s so we assume the pyramid already exists\n", s1ScalePath);
 			}
 
 			broadcastedPairwiseConnectionsMap.destroy();
