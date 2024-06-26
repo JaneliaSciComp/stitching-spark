@@ -449,7 +449,6 @@ public class PipelineStitchingStepExecutor extends PipelineStepExecutor
 						{
 							notEnoughNeighborsWithinConfidenceIntervalPairsCount.add( 1 );
 
-//							System.out.println( "Found " + searchRadiusEstimationWindow.getUsedPointsIndexes().size() + " neighbors within the search window but we require " + numNearestNeighbors + " nearest neighbors, perform a K-nearest neighbor search instead..." );
 							System.out.println();
 							System.out.println( pairOfTiles + ": found " + tilesSearchRadius[ j ].getUsedPointsIndexes().size() + " neighbors within the search window of the " + ( j == 0 ? "fixed" : "moving" ) + " tile but we require at least " + minNumNearestNeighbors + " nearest neighbors, so ignore this tile pair for now" );
 							System.out.println();
@@ -462,17 +461,6 @@ public class PipelineStitchingStepExecutor extends PipelineStepExecutor
 							}
 							return invalidResult;
 
-//								final SearchRadius searchRadiusNearestNeighbors = localSearchRadiusEstimator.getSearchRadiusTreeUsingKNearestNeighbors( movingTile, numNearestNeighbors );
-//								if ( searchRadiusNearestNeighbors.getUsedPointsIndexes().size() != numNearestNeighbors )
-//								{
-//									if ( localSearchRadiusEstimator.getNumPoints() >= numNearestNeighbors )
-//										throw new PipelineExecutionException( "Required " + numNearestNeighbors + " nearest neighbors, found only " + searchRadiusNearestNeighbors.getUsedPointsIndexes().size() );
-//									else if ( searchRadiusNearestNeighbors.getUsedPointsIndexes().size() != localSearchRadiusEstimator.getNumPoints() )
-//										throw new PipelineExecutionException( "Number of tiles in the stitched solution = " + localSearchRadiusEstimator.getNumPoints() + ", found " + searchRadiusNearestNeighbors.getUsedPointsIndexes().size() + " neighbors" );
-//									else
-//										System.out.println( "Got only " + localSearchRadiusEstimator.getNumPoints() + " neighbors as it is the size of the stitched solution" );
-//								}
-//								searchRadius = searchRadiusNearestNeighbors;
 						}
 						else
 						{
@@ -575,7 +563,6 @@ public class PipelineStitchingStepExecutor extends PipelineStepExecutor
 					else
 						System.out.println( "Averaging corresponding tile images for " + job.getChannels() + " channels" );
 
-//					final ComparableTuple< Integer > coordinates = new ComparableTuple<>( Conversions.toBoxedArray( Utils.getTileCoordinates( pair[ j ] ) ) );
 					final Integer tileIndex = pair[ j ].getIndex();
 					int channelsUsed = 0;
 
@@ -591,14 +578,6 @@ public class PipelineStitchingStepExecutor extends PipelineStepExecutor
 					for ( final int channel : channelIndices )
 					{
 						final TileInfo tileInfo = broadcastedTileChannelMappingByIndex.value().get( channel ).get( tileIndex );
-//						for ( final TileInfo tile : job.getTiles( channel ) )
-//						{
-//							if ( coordinates.compareTo( new ComparableTuple<>( Conversions.toBoxedArray( Utils.getTileCoordinates( tile ) ) ) ) == 0 )
-//							{
-//								tileInfo = tile;
-//								break;
-//							}
-//						}
 
 						// skip if no tile exists for this channel at this particular stage position
 						if ( tileInfo == null )
