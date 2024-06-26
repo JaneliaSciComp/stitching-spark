@@ -44,6 +44,14 @@ public class StitchingArguments implements Serializable {
 			usage = "Path/link to correction images")
 	private List< String > correctionImagesPaths;
 
+	@Option(name = "--darkfield-file",
+			usage = "Name of the darkfield file")
+	private String darkFieldFilePath;
+
+	@Option(name = "--flatfield-file",
+			usage = "Name of the flatfield file")
+	private String flatFieldFilePath;
+
 	@Option(name = "-r", aliases = { "--registrationChannelIndex" }, required = false,
 			usage = "Index of the input channel to be used for registration (indexing starts from 0). If omitted or equal to -1, all input channels will be used for registration by averaging the tile images.")
 	private Integer registrationChannelIndex = null;
@@ -119,6 +127,17 @@ public class StitchingArguments implements Serializable {
 		usage = "Apply stitching parameters obtained from raw tiles to deconvolved tiles.")
 	private boolean applyRawStitchingToDecon = false;
 
+	@Option(name = "-o", aliases = { "--outputDir" }, required = false,
+		usage = "The base directory for the stiched output.")
+	private String outputDir = null;
+
+	@Option(name = "--outputContainerName", required = false,
+			usage = "Ouput container name")
+	private String outputContainerName = null;
+
+	@Option(name = "--outputDatasetName", required = false,
+			usage = "Ouput container name")
+	private String outputDatasetName = null;
 
 	private boolean parsedSuccessfully = false;
 
@@ -223,6 +242,8 @@ public class StitchingArguments implements Serializable {
 
 	public List< String > inputTileConfigurations() { return inputTileConfigurations; }
 	public List< String > correctionImagesPaths() { return correctionImagesPaths; }
+	public String darkFieldFilePath() { return darkFieldFilePath; }
+	public String flatFieldFilePath() { return flatFieldFilePath; }
 	public Integer registrationChannelIndex() { return registrationChannelIndex; }
 	public int minStatsNeighborhood() { return minStatsNeighborhood; }
 	public int fusionCellSize() { return fusionCellSize; }
@@ -240,6 +261,12 @@ public class StitchingArguments implements Serializable {
 	public boolean applyRawStitchingToDecon() { return applyRawStitchingToDecon; }
 
 	public RematchingMode rematchingMode() { return rematchingMode; }
+
+	public String outputDir() { return outputDir; }
+
+	public String outputContainerName() { return outputContainerName; }
+
+	public String outputDatasetName() { return outputDatasetName; }
 
 	private long[] parseArray( final String str )
 	{

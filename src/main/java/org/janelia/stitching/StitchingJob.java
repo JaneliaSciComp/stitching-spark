@@ -45,9 +45,10 @@ public class StitchingJob implements Serializable {
 	private StitchingArguments args;
 	private transient StitchingParameters params;
 	private final String baseFolder;
+	private final String outputContainerName;
 
-	private String saveFolder;
-	private String datasetName;
+	private final String saveFolder;
+	private final String datasetName;
 
 	private List< TileInfo[] > tilesMultichannel;
 
@@ -61,10 +62,10 @@ public class StitchingJob implements Serializable {
 		pipeline = setUpPipeline( args );
 
 		final File inputFile = new File( args.inputTileConfigurations().get( 0 ) ).getAbsoluteFile();
-		baseFolder = saveFolder = inputFile.getParent();
-		datasetName = inputFile.getName();
-		if ( datasetName.endsWith( ".json" ) )
-			datasetName = datasetName.substring( 0, datasetName.lastIndexOf( ".json" ) );
+		baseFolder = inputFile.getParent();
+		saveFolder = args.outputDir();
+		outputContainerName = args.outputContainerName() != null ? args.outputContainerName() : "export.n5";
+		datasetName = args.outputDatasetName();
 	}
 
 	private EnumSet< PipelineStep > setUpPipeline( final StitchingArguments args )
@@ -120,10 +121,9 @@ public class StitchingJob implements Serializable {
 	}
 
 	public String getBaseFolder() { return baseFolder; }
-
 	public String getSaveFolder() { return saveFolder; }
-	public void setSaveFolder( final String saveFolder ) { this.saveFolder = saveFolder; }
 
+	public String getOutputContainerName() { return outputContainerName; }
 	public String getDatasetName() { return datasetName; }
 
 	public int getDimensionality() { return tilesMultichannel.get( 0 )[ 0 ].numDimensions(); }

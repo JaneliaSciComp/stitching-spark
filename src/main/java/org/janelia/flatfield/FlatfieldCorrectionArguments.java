@@ -107,6 +107,7 @@ public class FlatfieldCorrectionArguments
 
 	public List< String > inputChannelsPaths() { return inputChannelsPaths; }
 	public String cropMinMaxIntervalStr() { return cropMinMaxInterval; };
+
 	public boolean use2D() { return use2D; }
 	public Pair< Double, Double > getMinMaxQuantiles() { return new ValuePair<>( histMinQuantile, histMaxQuantile ); }
 
