@@ -163,7 +163,7 @@ public class ConvertCZITilesToN5Spark
 		// TODO: can consider pixel resolution to calculate isotropic block size in Z
 
 		// find out whether tile images are stored in separate .czi files or in a single .czi container
-		final boolean singleCziContainer = Arrays.asList( inputTiles ).stream().map( tileInfo -> tileInfo.getFilePath() ).distinct().count() == 1;
+		final boolean singleCziContainer = Arrays.stream( inputTiles ).map(TileInfo::getFilePath).distinct().count() == 1;
 
 		// NOTE: the channel groups should already exist because they are created in the previous step: ParseCZITilesMetadata
 		final N5Writer n5 = n5Supplier.get();
