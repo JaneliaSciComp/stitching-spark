@@ -9,7 +9,6 @@ import java.util.TreeMap;
 
 import net.imglib2.converter.Converter;
 import net.imglib2.converter.Converters;
-import net.imglib2.converter.readwrite.SamplerConverter;
 import net.imglib2.img.array.ArrayImgFactory;
 import net.imglib2.util.Util;
 import org.apache.spark.SparkConf;

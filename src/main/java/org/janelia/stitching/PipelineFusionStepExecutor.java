@@ -51,8 +51,6 @@ public class PipelineFusionStepExecutor< T extends NativeType< T > & RealType< T
 
 	private static final String PIXEL_RESOLUTION_ATTRIBUTE_KEY = "pixelResolution";
 
-	final TreeMap< Integer, long[] > levelToImageDimensions = new TreeMap<>(), levelToCellSize = new TreeMap<>();
-
 	double[] normalizedVoxelDimensions;
 
 	Broadcast< Map< Integer, Set< Integer > > > broadcastedPairwiseConnectionsMap;
