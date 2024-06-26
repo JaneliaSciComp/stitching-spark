@@ -216,7 +216,7 @@ public class ConvertCZITilesToN5Spark
 							if ( inputTile.numDimensions() != blockSize.length )
 								throw new RuntimeException( "dimensionality mismatch" );
 
-							System.out.println("Opening image...");
+							System.out.println("Opening image " + inputTile.getFilePath() + "...");
 							long elapsedMsec = System.currentTimeMillis();
 							final ImagePlus[] imps = ImageImporter.openBioformatsImageSeries( inputTile.getFilePath() );
 							elapsedMsec = System.currentTimeMillis() - elapsedMsec;
