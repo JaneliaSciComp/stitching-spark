@@ -89,8 +89,6 @@ public class PipelineStitchingStepExecutor extends PipelineStepExecutor
 			System.out.println( "Retaining only " + overlappingTiles.size() + " adjacent pairs of them" );
 		}
 
-		//final boolean pairsJustUpdated = false;
-
 		final StitchingOptimizer optimizer = new StitchingOptimizer( job, sparkContext );
 		try
 		{
@@ -116,12 +114,6 @@ public class PipelineStitchingStepExecutor extends PipelineStepExecutor
 				// check if number of stitched tiles has increased compared to the previous iteration
 				final TileInfo[] stageTiles = job.getTiles( job.getMainChannelIndex() );
 				final TileInfo[] stitchedTiles = TileInfoJSONProvider.loadTilesConfiguration( dataProvider.getJsonReader( stitchedTilesFilepath ) );
-
-				// TODO: test and keep if works or remove (currently generates worse solutions)
-				// find new pairs using new solution for predicting positions of the excluded (missing) tiles
-//				final List< TilePair > newPairs = FindPairwiseChanges.getPairsWithPrediction( stageTiles, stitchedTiles, job.getArgs().minStatsNeighborhood(), !job.getArgs().useAllPairs() );
-//				overlappingTiles.clear();
-//				overlappingTiles.addAll( newPairs );
 
 				if ( iteration == 0 )
 				{
